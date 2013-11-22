@@ -14,6 +14,7 @@
 	},
 "permissions": [
 	"http://www.baidu.com/",
+    "http://dynamic.12306.cn/",
 	"notifications"
 	]
 }
