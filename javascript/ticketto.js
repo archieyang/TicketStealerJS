@@ -45,7 +45,7 @@ var ticketto = function () {
         },
 
         queryTrainTicket = function () {
-            var queryTrainTicketUrl = "http://dynamic.12306.cn/otsquery/query/queryRemanentTicketAction.do?method=queryLeftTicket&orderRequest.train_date=2013-11-23&orderRequest.from_station_telecode=BJP&orderRequest.to_station_telecode=SHH&orderRequest.train_no=&trainPassType=QB&trainClass=QB%23D%23Z%23T%23K%23QT%23&includeStudent=00&seatTypeAndNum=&orderRequest.start_time_str=00%3A00--24%3A00",
+            var queryTrainTicketUrl = "http://dynamic.12306.cn/otsquery/query/queryRemanentTicketAction.do?method=queryLeftTicket&orderRequest.train_date=2013-11-24&orderRequest.from_station_telecode=BJP&orderRequest.to_station_telecode=SHH&orderRequest.train_no=&trainPassType=QB&trainClass=QB%23D%23Z%23T%23K%23QT%23&includeStudent=00&seatTypeAndNum=&orderRequest.start_time_str=00%3A00--24%3A00",
 
                 regex = /(?:<span id=.+?>)(.+?)<\/span>,(?:.+?)([\u4E00-\u9FFF]+)(?:.+?)(\d{2}:\d{2})(?:.+?)([\u4E00-\u9FFF]+)(?:.+?)(\d{2}:\d{2}),(\d{2}:\d{2}),((?:.+?,){11})/g,
                 isWUTicket = /[^\d+|\-\-]/,//Use to filter Chinese character "无"
@@ -64,70 +64,98 @@ var ticketto = function () {
 
                 trainInfoRes = [],//All trainItems
                 trainInfoResWithTimestamp,//trainInfoRes with timestamp
-                i;
 
+                fromCityCode,toCityCode,i,
 
-            rawInfo = httpGet(queryTrainTicketUrl);
-            if (!rawInfo) {
-                return;
-            }
+                buildQueryTrainUrl = function (fromCityCode, toCityCode, date, trainClass) {
+                    if (fromCityCode && toCityCode && date && trainClass) {
+                        return "http://dynamic.12306.cn/otsquery/query/queryRemanentTicketAction.do?method=queryLeftTicket&orderRequest.train_date=" + date + "&orderRequest.from_station_telecode=" + fromCityCode + "&orderRequest.to_station_telecode=" + toCityCode + "&orderRequest.train_no=&trainPassType=QB&trainClass=" + trainClass + "&includeStudent=00&seatTypeAndNum=&orderRequest.start_time_str=00%3A00--24%3A00"
+                    }
+                    return null;
+                },
+
+                queryTrainPerDate = function (queryTrainTicketUrl, startTime, endTime) {
+                    log(queryTrainTicketUrl);
+                    rawInfo = httpGet(queryTrainTicketUrl);
+                    if (rawInfo==-1) {
+                        return;
+                    }
 
 //            Contains only two attribute: datas and time
-            rawInfoObject = JSON.parse(rawInfo);
+                    rawInfoObject = JSON.parse(rawInfo);
 
 
-            if (rawInfoObject.hasOwnProperty("datas")) {
+                    if (rawInfoObject.hasOwnProperty("datas")) {
 //              Use regex to get one train ticket info from datas,
 //              iterates to get all the infos.
-                while ((rawItem = regex.exec(rawInfoObject.datas) ) !== null) {
-                    trainItem = {};
-                    for (i = 0; i < trainInfoPtn.length; ++i) {
-                        trainItem[trainInfoPtn[i]] = rawItem[i + 1];
-                    }
+                        while ((rawItem = regex.exec(rawInfoObject.datas) ) !== null) {
+                            trainItem = {};
+                            for (i = 0; i < trainInfoPtn.length; ++i) {
+                                trainItem[trainInfoPtn[i]] = rawItem[i + 1];
+                            }
 
-                    rawTicketInfo = rawItem[trainInfoPtn.length + 1].split(",");
+                            rawTicketInfo = rawItem[trainInfoPtn.length + 1].split(",");
 
-                    ticketInfo = {};
+                            ticketInfo = {};
 
-                    for (i = 0; i < ticketInfoPtn.length; ++i) {
-                        //change Chinese character "无" to 0 ticket.
-                        if (isWUTicket.test(rawTicketInfo[i]))
-                            ticketInfo[ticketInfoPtn[i]] = "0";
-                        else
-                            ticketInfo[ticketInfoPtn[i]] = rawTicketInfo[i];
-                    }
+                            for (i = 0; i < ticketInfoPtn.length; ++i) {
+                                //change Chinese character "无" to 0 ticket.
+                                if (isWUTicket.test(rawTicketInfo[i]))
+                                    ticketInfo[ticketInfoPtn[i]] = "0";
+                                else
+                                    ticketInfo[ticketInfoPtn[i]] = rawTicketInfo[i];
+                            }
 
 //                  Stores ticketInfo in trainItem
-                    trainItem.ticket = ticketInfo;
+                            trainItem.ticket = ticketInfo;
 
-                    trainInfoRes.push(trainItem);
+                            trainInfoRes.push(trainItem);
 
+                        }
+
+                    }
+
+                    trainInfoResWithTimestamp = {};
+                    trainInfoResWithTimestamp.trainInfoData = trainInfoRes;
+
+
+                    if (rawInfoObject.hasOwnProperty("time")) {
+                        trainInfoResWithTimestamp.timestamp = rawInfoObject.time;
+                    }
+
+                    return trainInfoResWithTimestamp;
+                };
+
+
+            return function (queryInfo) {
+                var pos, res=[];
+                fromCityCode = queryCityCode(queryInfo.fromCity);
+                toCityCode = queryCityCode(queryInfo.toCity);
+                for(pos in queryInfo.dates){
+                    log(queryInfo.dates[pos]);
+                    log(queryInfo.trainClass);
+                    res.push(queryTrainPerDate(buildQueryTrainUrl(fromCityCode,toCityCode,queryInfo.dates[pos],queryInfo.trainClass)));
                 }
 
-            }
-
-            trainInfoResWithTimestamp =  {};
-            trainInfoResWithTimestamp.trainInfoData = trainInfoRes;
+                return res;
 
 
-            if (rawInfoObject.hasOwnProperty("time")) {
-                trainInfoResWithTimestamp.timestamp = rawInfoObject.time;
-            }
+            };
 
-            return trainInfoResWithTimestamp;
 
-        };
+        }();
 
 //    return the ticketto function
     return function () {
         log('halo');
-        var query = {from: queryCityCode(""), to: queryCityCode(""), trainClass: "", date: ""};
+        var query = {from: queryCityCode(""), to: queryCityCode(), trainClass: "", date: ""};
         log(queryCityCode("北京"));
         log(queryCityCode("上海"));
         log(queryCityCode("嘿嘿"));
 
+        var qInfo = {fromCity:"北京",toCity:"上海",dates:["2013-11-24","2013-11-25"],trainClass:"QB%23D%23Z%23T%23K%23QT%23", startTime:null, endTime:null};
 
-        log(queryTrainTicket());
+        log(queryTrainTicket(qInfo));
 
 
     }
