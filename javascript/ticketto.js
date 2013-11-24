@@ -1,10 +1,10 @@
 /**
  * Created by archie on 13-11-22.
  */
-var log = function (message) {
-//    function for log information to the chrome console
-    return console.log(message);
-};
+//var log = function (message) {
+////    function for log information to the chrome console
+//    return console.log(message);
+//};
 
 var ticketto = function () {
     var cityList,
@@ -43,7 +43,8 @@ var ticketto = function () {
 
         buildQueryFunction = function () {
             var regex = /(?:<span id=.+?>)(.+?)<\/span>,(?:.+?)([\u4E00-\u9FFF]+)(?:.+?)(\d{2}:\d{2})(?:.+?)([\u4E00-\u9FFF]+)(?:.+?)(\d{2}:\d{2}),(\d{2}:\d{2}),((?:.+?,){11})/g,
-                isWUTicket = /[^\d+|\-\-]/,//Use to filter Chinese character "无"
+                isWUTicket = /[^\d+|\-\-]/,//Use to filter Chinese character "无",
+
                 trainInfoPtn = ["trainNo", "from", "fromTime", "to", "toTime", "lastTime"],
 //                       ticketInfoPtn = [  '商务座',   '特等座','一等座','二等座', '高级软卧',      '软卧',   '硬卧',   '软座',   '硬座',  '无座']
                 ticketInfoPtn = ["businessSt", "VIPSt", "G1St", "G2St", "VIPSoftBd", "softBd", "hardBd", "softSt", "hardSt", "standTkt"],
@@ -51,7 +52,16 @@ var ticketto = function () {
                 toCityCode,     //the citycode of destination city
                 startMins,      //start time limit for departure time
                 endMins,        //end time limit for deparute time
-                queryUrls = [],
+                queryUrls,
+
+                stringToDate = function (s) {
+                    var g = s.split("-"), date = new Date();
+
+                    date.setYear(g[0]);
+                    date.setMonth(parseInt(g[1]) - 1);
+                    date.setDate(g[2]);
+                    return date;
+                },
 
                 buildQueryTrainUrl = function (fromCityCode, toCityCode, date, trainClass) {
 //                    build query url per date
@@ -63,10 +73,18 @@ var ticketto = function () {
 
                 getTimeInMinute = function (time) {
 //                    transform time strings to miniutes
-                    var hoursMinutes = time.split(":"),
-                        hours = parseInt(hoursMinutes[0]),
-                        minutes = parseInt(hoursMinutes[1]),
-                        timeInMinutes = hours * 60 + minutes;
+                    var isTime = /\d{2}:\d{2}/,
+                        hoursMinutes,
+                        hours,
+                        minutes,
+                        timeInMinutes;
+                    if(!isTime.test(time)){
+                        return;
+                    }
+                    hoursMinutes = time.split(":"),
+                    hours = parseInt(hoursMinutes[0]),
+                    minutes = parseInt(hoursMinutes[1]),
+                    timeInMinutes = hours * 60 + minutes;
 
                     if (hours < 0 || hours > 24) {
                         return;
@@ -105,6 +123,7 @@ var ticketto = function () {
 
 
                     rawInfo = httpGet(queryTrainTicketUrl);
+
                     if (rawInfo == -1) {
 //                        An error happens
                         return;
@@ -164,15 +183,20 @@ var ticketto = function () {
 
 
             return function (queryInfo) {
-                var date, year, month, day;
+                var date, startDate = stringToDate(queryInfo.dates.start), endDate = stringToDate(queryInfo.dates.end), year, month, day;
                 fromCityCode = queryCityCode(queryInfo.fromCity);
                 toCityCode = queryCityCode(queryInfo.toCity);
 
-                startMins = queryInfo.departureStartTime !== undefined ? getTimeInMinute(queryInfo.departureStartTime) : 0;
-                endMins = queryInfo.departureEndTime !== undefined ? getTimeInMinute(queryInfo.departureEndTime) : 24 * 60;
+                startMins = getTimeInMinute(queryInfo.departureStartTime);
+                endMins = getTimeInMinute(queryInfo.departureEndTime);
+
+                if(startMins===undefined) startMins=0;
+                if(endMins===undefined) endMins= 24*60;
+
+                queryUrls = [];
 
 //                build a queryUrls group from queryInfo ,each item is a query per day.
-                for (date = queryInfo.dates[0]; date <= queryInfo.dates[1]; date.setDate(date.getDate() + 1)) {
+                for (date =startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
                     year = date.getFullYear();
                     month = date.getMonth() + 1;
                     day = date.getDate();
@@ -190,7 +214,6 @@ var ticketto = function () {
                     for (i in queryUrls) {
                         res.push(queryTrainPerDate(queryUrls[i]));
                     }
-
                     return res;
                 };
 
@@ -201,11 +224,11 @@ var ticketto = function () {
 //    return the ticketto function
     return {"buildQueryFunction": buildQueryFunction};
 }();
-var test = function () {
-    var qInfo = {fromCity: "北京", toCity: "上海", dates: [new Date(2013, 10, 24), new Date(2013, 10, 24)], trainClass: "QB%23D%23Z%23T%23K%23QT%23", departureStartTime: "21:22", departureEndTime: "21:40"},
-        qInfo2 = {fromCity: "北京", toCity: "上海", dates: [new Date(2013, 10, 27), new Date(2013, 10, 29)], trainClass: "QB%23D%23Z%23T%23K%23QT%23"},
-        qFunction = ticketto.buildQueryFunction(qInfo2);
-    log(qFunction());
-};
-test();
+//var test = function () {
+//    var qInfo = {fromCity: "北京", toCity: "上海", dates: [new Date(2013, 10, 24), new Date(2013, 10, 24)], trainClass: "QB%23D%23Z%23T%23K%23QT%23", departureStartTime: "21:22", departureEndTime: "21:40"},
+//        qInfo2 = {fromCity: "北京", toCity: "上海", dates: [new Date(2013, 10, 27), new Date(2013, 10, 29)], trainClass: "QB%23D%23Z%23T%23K%23QT%23"},
+//        qFunction = ticketto.buildQueryFunction(qInfo2);
+//    log(qFunction());
+//};
+//test();
 

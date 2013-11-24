@@ -1,9 +1,38 @@
-<html>
+<html xmlns="http://www.w3.org/1999/html">
 <head>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8">
     <script src="/javascript/jquery-1.10.2.min.js"></script>
     <script charset="utf-8" src="/javascript/ticketto.js"></script>
+    <script src="/javascript/options.js"></script>
 </head>
 <body>
-	<div>ticketto.js</div>
+<div>ticketto.js</div>
+<form id="settingForm">
+    <label>出发地</label>
+    <input id="fromCity" value="北京" name="basicInfo"/>
+    <label>目的地</label>
+    <input id="toCity" value="上海" name="basicInfo"/>
+    <br/>
+    <label>出发日期</label>
+    <input id="startDate" name="basicInfo" value="2013-11-25"/>
+    <label>-</label>
+    <input id="endDate" name="basicInfo" value="2013-11-26"/>
+    <br/>
+    <label>出发时间</label>
+    <input name="basicInfo"/>
+    <label>-</label>
+    <input name="basicInfo"/>
+    <br/>
+    <input type="checkbox" name="tclass" value="D%23" checked="true">动车
+    <input type="checkbox" name="tclass" value="Z%23">Z字头
+    <input type="checkbox" name="tclass" value="T%23">T字头
+    <input type="checkbox" name="tclass" value="K%23">K字头
+    <input type="checkbox" name="tclass" value="QT%23">其他
+
+    <input type="submit" value="Start"/>
+    <br/>
+
+
+</form>
 </body>
 </html>
