@@ -22,7 +22,7 @@ $(document).ready(function() {
 //            date.setDate(g[2]);
 //            return date;
 //        };
-        event.preventDefault();
+        
 
         var trainInfo= {},basicInfo = $("[name='basicInfo']"),trainClassCheckbox = $("[name='tclass']");
         trainInfo.fromCity = basicInfo[0].value;
@@ -49,7 +49,7 @@ $(document).ready(function() {
         log(trainInfo);
         var f = ticketto.buildQueryFunction(trainInfo);
         log(f());
-
+        event.preventDefault();
 
 
     })
