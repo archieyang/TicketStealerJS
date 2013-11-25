@@ -54,15 +54,6 @@ var ticketto = function () {
                 endMins,        //end time limit for deparute time
                 queryUrls,
 
-                stringToDate = function (s) {
-                    var g = s.split("-"), date = new Date();
-
-                    date.setYear(g[0]);
-                    date.setMonth(parseInt(g[1]) - 1);
-                    date.setDate(g[2]);
-                    return date;
-                },
-
                 buildQueryTrainUrl = function (fromCityCode, toCityCode, date, trainClass) {
 //                    build query url per date
                     if (fromCityCode && toCityCode && date && trainClass) {
@@ -78,13 +69,13 @@ var ticketto = function () {
                         hours,
                         minutes,
                         timeInMinutes;
-                    if(!isTime.test(time)){
+                    if (!isTime.test(time)) {
                         return;
                     }
                     hoursMinutes = time.split(":"),
-                    hours = parseInt(hoursMinutes[0]),
-                    minutes = parseInt(hoursMinutes[1]),
-                    timeInMinutes = hours * 60 + minutes;
+                        hours = parseInt(hoursMinutes[0]),
+                        minutes = parseInt(hoursMinutes[1]),
+                        timeInMinutes = hours * 60 + minutes;
 
                     if (hours < 0 || hours > 24) {
                         return;
@@ -109,6 +100,7 @@ var ticketto = function () {
                 },
 
                 queryTrainPerDate = function (queryTrainTicketUrl) {
+                    log(queryTrainTicketUrl);
 //                    query wanted train info for a given date
                     var rawInfo,//Raw info got from dynamic.12306.cn
                         rawInfoObject,//Raw object of rawInfo
@@ -183,20 +175,21 @@ var ticketto = function () {
 
 
             return function (queryInfo) {
-                var date, startDate = stringToDate(queryInfo.dates.start), endDate = stringToDate(queryInfo.dates.end), year, month, day;
+                var date, startDate = queryInfo.dates.first, endDate = queryInfo.dates.last, year, month, day;
+
                 fromCityCode = queryCityCode(queryInfo.fromCity);
                 toCityCode = queryCityCode(queryInfo.toCity);
 
                 startMins = getTimeInMinute(queryInfo.departureStartTime);
                 endMins = getTimeInMinute(queryInfo.departureEndTime);
 
-                if(startMins===undefined) startMins=0;
-                if(endMins===undefined) endMins= 24*60;
+                if (startMins === undefined) startMins = 0;
+                if (endMins === undefined) endMins = 24 * 60;
 
                 queryUrls = [];
 
 //                build a queryUrls group from queryInfo ,each item is a query per day.
-                for (date =startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
+                for (date = new Date(startDate.getTime()); date <= endDate; date.setDate(date.getDate() + 1)) {
                     year = date.getFullYear();
                     month = date.getMonth() + 1;
                     day = date.getDate();
