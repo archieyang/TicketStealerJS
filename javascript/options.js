@@ -9,19 +9,18 @@ var log = function (message) {
 log("halo from options.js");
 
 $(document).ready(function () {
-    log("hello");
-    var trainInfo = {},
-        stringToDate = function (sDate) {
-            var ymd = sDate.split("-");
-            return new Date(ymd[0], parseInt(ymd[1]) - 1, ymd[2]);
-        },
+
+    var $firstDayPicker = $("#firstDay"),
+        $lastDayPicker = $("#lastDay"),
+        $startButton = $("#startButton"),
 
         datePickerParam = function () {
 
             var param;
-            return function (onSelectCallback) {
+            return function () {
                 param = {
                     inline: true,
+//                    defaultDate: (new Date()).getTime(),
                     dateFormat: 'yy-mm-dd',
                     clearText: "清除",
                     closeText: "关闭",
@@ -31,7 +30,26 @@ $(document).ready(function () {
                     dayNames: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
                     dayNamesShort: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
                     dayNamesMin: ['日', '一', '二', '三', '四', '五', '六'],
-                    onSelect: onSelectCallback
+                    minDate:0,
+                    onSelect: function () {
+
+                        if ($firstDayPicker.datepicker("getDate") > $lastDayPicker.datepicker("getDate")) {
+                            if($("#dateAlert").length===0) {
+
+                                $lastDayPicker.after('<div id="dateAlert"><b>Wrong date!</b></div>');
+                            } else {
+                                $("#dateAlert").show();
+                            }
+                            $startButton.attr('disabled','true');
+
+                        } else {
+
+                            $("#dateAlert").hide();
+                            $startButton.removeAttr('disabled');
+                        }
+
+
+                    }
                 };
 
                 return param;
@@ -57,23 +75,15 @@ $(document).ready(function () {
 
         }();
 
-    trainInfo.dates = {};
 
 
-    $("#firstDay").datepicker(
-        datePickerParam(function (selectedDate) {
-            trainInfo.dates.first = stringToDate(selectedDate);
-        })
-    );
-    $("#lastDay").datepicker(
-        datePickerParam(function (selectedDate) {
-            trainInfo.dates.last = stringToDate(selectedDate);
-//            if(trainInfo.dates.last < trainInfo.dates.first){
-//                trainInfo.dates.last = trainInfo.dates.first;
-//                $(this).setDate(trainInfo.dates.first.getTime());
-//            }
-        })
-    );
+    $firstDayPicker.datepicker(
+        datePickerParam()
+    ).datepicker('setDate', new Date());
+
+    $lastDayPicker.datepicker(
+        datePickerParam()
+    ).datepicker('setDate', new Date());
 
     $("#startTime").timepicker(
         timePickerParam(function (selectedTime) {
@@ -89,6 +99,12 @@ $(document).ready(function () {
 
 
     $("#settingForm").submit(function (event) {
+        var trainInfo = {};
+        trainInfo.dates = {
+            first:$firstDayPicker.datepicker('getDate'),
+            last:$lastDayPicker.datepicker('getDate')
+        };
+
 
         event.preventDefault();
         var basicInfo = $("[name='basicInfo']"), trainClassCheckbox = $("[name='tclass']");
@@ -96,25 +112,19 @@ $(document).ready(function () {
         trainInfo.fromCity = basicInfo[0].value;
         trainInfo.toCity = basicInfo[1].value;
 
-//        trainInfo.dates = {};
-
-        trainInfo.dates.first = trainInfo.dates.first === undefined ? stringToDate(basicInfo[2].value) : trainInfo.dates.first;
-        trainInfo.dates.last = trainInfo.dates.last === undefined ? stringToDate(basicInfo[3].value) : trainInfo.dates.last;
-
 //        trainInfo.departureStartTime = trainInfo.departureStartTime === undefined ? basicInfo[4].value : trainInfo.departureStartTime;
 //        trainInfo.departureEndTime = trainInfo.departureEndTime === undefined ? basicInfo[5].value : trainInfo.departureEndTime;
         trainInfo.trainClass = "";
 
         trainClassCheckbox.each(function () {
-            log(this.checked + "" + $(this).val());
             if (this.checked) {
                 trainInfo.trainClass += $(this).val();
             }
         });
 
         log(trainInfo);
-        var f = ticketto.buildQueryFunction(trainInfo);
-        log(f());
+//        var f = ticketto.buildQueryFunction(trainInfo);
+//        log(f());
 
 
     })
