@@ -15,16 +15,29 @@
     <style>
         .ui-datepicker {
             font-size: 10px;
-        };
+        }
+        .ui-autocomplete {
+            max-height: 100px;
+            font-size: 10px;
+            overflow-y: auto;
+            /* prevent horizontal scrollbar */
+            overflow-x: hidden;
+        }
+        /* IE 6 doesn't support max-height
+         * we use height instead, but this forces the menu to always be this tall
+         */
+        * html .ui-autocomplete {
+            height: 100px;
+        }
     </style>
 </head>
 <body>
 <div>ticketto.js</div>
 <form id="settingForm">
     <label>出发地</label>
-    <input id="fromCity" value="北京" name="basicInfo"/>
+    <input id="fromCity" value="北京" name="basicInfo" class="cityInfo"/>
     <label>目的地</label>
-    <input id="toCity" value="上海" name="basicInfo"/>
+    <input id="toCity" value="上海" name="basicInfo" class="cityInfo"/>
     <br/>
     <label>出发日期</label>
     <input id="firstDay" name="basicInfo" class="datepicker"  readonly="readonly"/>

@@ -15,6 +15,7 @@ $(document).ready(function () {
         $startButton = $("#startButton"),
         $departureTimeFrom = $('#startTime'),
         $departureTimeTo = $('#endTime'),
+        cityNames = ticketto.getCityNames(),
 
         datePickerParam = function () {
 
@@ -34,7 +35,6 @@ $(document).ready(function () {
                     dayNamesMin: ['日', '一', '二', '三', '四', '五', '六'],
                     minDate: 0,
                     onSelect: function () {
-                        log("datepickerOnSelect");
 
                         if ($firstDayPicker.datepicker("getDate") > $lastDayPicker.datepicker("getDate")) {
                             if ($("#dateAlert").length === 0) {
@@ -121,6 +121,10 @@ $(document).ready(function () {
     $departureTimeFrom.timepicker('setTime', '00:00');
     $departureTimeTo.timepicker('setTime', '23:59');
 
+    $('.cityInfo').autocomplete({
+       source:cityNames
+    });
+
 
     $("#settingForm").submit(function (event) {
         var trainInfo = {},
@@ -164,8 +168,9 @@ $(document).ready(function () {
         });
 
         log(trainInfo);
-//        var f = ticketto.buildQueryFunction(trainInfo);
-//        log(f());
+        var f = ticketto.buildQueryFunction(trainInfo);
+
+        log(f());
 
 
     })

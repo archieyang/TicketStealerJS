@@ -8,6 +8,7 @@
 
 var ticketto = function () {
     var cityList,
+        queryCityCodeUrl = 'http://dynamic.12306.cn/otsquery/js/common/station_name.js?version=1.40',
 
         httpGet = function (theUrl) {
 //            HTTP GET methond
@@ -22,10 +23,20 @@ var ticketto = function () {
             }
         },
 
+        getCityNames = function () {
+            var ctReg = /\|([\u4E00-\u9FFF]+?)\|/g, arr = [], a;
+            cityList = httpGet(queryCityCodeUrl);
+            while ((a = ctReg.exec(cityList)) !== null) {
+                arr.push(a[1]);
+            }
+            return arr;
+
+        },
+
         queryCityCode = function (cityName) {
 //            Get the city code of cityName, the city code is three characters such as "BJP"
-            var queryCityCodeUrl = 'http://dynamic.12306.cn/otsquery/js/common/station_name.js?version=1.40',
-                regexCity = new RegExp("\\|" + cityName + "\\|(.+?)\\|"),
+
+            var regexCity = new RegExp("\\|" + cityName + "\\|(.+?)\\|"),
                 res;
 
             if (cityList === undefined) {
@@ -36,6 +47,11 @@ var ticketto = function () {
                 }
             }
             res = regexCity.exec(cityList);
+
+            // grap info
+
+//            --------------------------
+
 
             return res === null ? null : res[1];
 
@@ -215,8 +231,12 @@ var ticketto = function () {
         }();
 
 //    return the ticketto function
-    return {"buildQueryFunction": buildQueryFunction};
-}();
+    return {
+        "buildQueryFunction": buildQueryFunction,
+        "getCityNames": getCityNames
+    };
+}
+    ();
 //var test = function () {
 //    var qInfo = {fromCity: "北京", toCity: "上海", dates: [new Date(2013, 10, 24), new Date(2013, 10, 24)], trainClass: "QB%23D%23Z%23T%23K%23QT%23", departureStartTime: "21:22", departureEndTime: "21:40"},
 //        qInfo2 = {fromCity: "北京", toCity: "上海", dates: [new Date(2013, 10, 27), new Date(2013, 10, 29)], trainClass: "QB%23D%23Z%23T%23K%23QT%23"},
