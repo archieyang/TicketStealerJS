@@ -13,6 +13,8 @@ $(document).ready(function () {
     var $firstDayPicker = $("#firstDay"),
         $lastDayPicker = $("#lastDay"),
         $startButton = $("#startButton"),
+        $departureTimeFrom = $('#startTime'),
+        $departureTimeTo = $('#endTime'),
 
         datePickerParam = function () {
 
@@ -30,17 +32,18 @@ $(document).ready(function () {
                     dayNames: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
                     dayNamesShort: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
                     dayNamesMin: ['日', '一', '二', '三', '四', '五', '六'],
-                    minDate:0,
+                    minDate: 0,
                     onSelect: function () {
+                        log("datepickerOnSelect");
 
                         if ($firstDayPicker.datepicker("getDate") > $lastDayPicker.datepicker("getDate")) {
-                            if($("#dateAlert").length===0) {
+                            if ($("#dateAlert").length === 0) {
 
                                 $lastDayPicker.after('<div id="dateAlert"><b>Wrong date!</b></div>');
                             } else {
                                 $("#dateAlert").show();
                             }
-                            $startButton.attr('disabled','true');
+                            $startButton.attr('disabled', 'true');
 
                         } else {
 
@@ -59,14 +62,33 @@ $(document).ready(function () {
         timePickerParam = function () {
             var param;
 
-            return function (onSelectedCallback) {
+            return function () {
                 param = {
-                    defaultTime: '',
-
                     hourText: '时',             // Define the locale value for "Hours"
                     minuteText: '分',         // Define the locale value for "Minute"
                     amPmText: ['上午', '下午'],       // Define the locale value for periods
-                    onSelect: onSelectedCallback
+                    defaultTime: '23:59',
+                    onSelect: function () {
+
+                        if ($departureTimeFrom.timepicker("getTimeAsDate") > $departureTimeTo.timepicker("getTimeAsDate")) {
+                            if ($("#timeAlert").length === 0) {
+
+                                $departureTimeTo.after('<div id="timeAlert"><b>Wrong time!</b></div>');
+
+                            } else {
+                                $("#timeAlert").show();
+                            }
+
+                            $startButton.attr('disabled', 'true');
+
+                        } else {
+
+                            $("#timeAlert").hide();
+                            $startButton.removeAttr('disabled');
+                        }
+
+
+                    }
 
                 };
                 return param;
@@ -75,7 +97,10 @@ $(document).ready(function () {
 
         }();
 
-
+//  Something interesting here.
+//  When call datepicker('setDate', new Date()),onSelect is not called.
+//  When call timepicker('setTime', 'HH:MM'), onSelect is called.
+//  So $depatureTimeTo has to be initialized when $departureTimeFrom.timepicker('setTime', '00:00') is called
 
     $firstDayPicker.datepicker(
         datePickerParam()
@@ -85,29 +110,45 @@ $(document).ready(function () {
         datePickerParam()
     ).datepicker('setDate', new Date());
 
-    $("#startTime").timepicker(
-        timePickerParam(function (selectedTime) {
-            trainInfo.departureStartTime = selectedTime;
-        })
+    $departureTimeFrom.timepicker(
+        timePickerParam()
     );
 
-    $("#endTime").timepicker(
-        timePickerParam(function (selectedTime) {
-            trainInfo.departureEndTime = selectedTime;
-        })
+    $departureTimeTo.timepicker(
+        timePickerParam()
     );
+
+    $departureTimeFrom.timepicker('setTime', '00:00');
+    $departureTimeTo.timepicker('setTime', '23:59');
 
 
     $("#settingForm").submit(function (event) {
-        var trainInfo = {};
+        var trainInfo = {},
+            basicInfo = $("[name='basicInfo']"), trainClassCheckbox = $("[name='tclass']"),
+            _timeAsDateToTimeString = function(date){
+                var h = date.getHours(), m = date.getMinutes();
+                if(h<10){
+                    h = '0' + h;
+                }
+                if(m<10){
+                    m = '0' + m;
+                }
+                return h + ":" + m;
+            };
+
         trainInfo.dates = {
-            first:$firstDayPicker.datepicker('getDate'),
-            last:$lastDayPicker.datepicker('getDate')
+            first: $firstDayPicker.datepicker('getDate'),
+            last: $lastDayPicker.datepicker('getDate')
         };
 
 
+        trainInfo.departureStartTime =_timeAsDateToTimeString($departureTimeFrom.timepicker('getTimeAsDate'));
+        trainInfo.departureEndTime = _timeAsDateToTimeString($departureTimeTo.timepicker('getTimeAsDate'));
+
+
+
         event.preventDefault();
-        var basicInfo = $("[name='basicInfo']"), trainClassCheckbox = $("[name='tclass']");
+
 
         trainInfo.fromCity = basicInfo[0].value;
         trainInfo.toCity = basicInfo[1].value;
