@@ -10,7 +10,7 @@
 
 "options_page":"pages/options.html",
 "background":{
-	"scripts": ["javascript/jquery-2.0.3.min.js","javascript/background.js"]
+	"scripts": ["javascript/jquery-2.0.3.min.js","javascript/ticketto.js","javascript/background.js"]
 	},
 "permissions": [
 	"http://www.baidu.com/",

@@ -48,10 +48,6 @@ var ticketto = function () {
             }
             res = regexCity.exec(cityList);
 
-            // grap info
-
-//            --------------------------
-
 
             return res === null ? null : res[1];
 
@@ -116,7 +112,7 @@ var ticketto = function () {
                 },
 
                 queryTrainPerDate = function (queryTrainTicketUrl) {
-                    log(queryTrainTicketUrl);
+//                    alert(queryTrainTicketUrl);
 //                    query wanted train info for a given date
                     var rawInfo,//Raw info got from dynamic.12306.cn
                         rawInfoObject,//Raw object of rawInfo
@@ -191,7 +187,8 @@ var ticketto = function () {
 
 
             return function (queryInfo) {
-                var date, startDate = queryInfo.dates.first, endDate = queryInfo.dates.last, year, month, day;
+                var date, startDate = new Date(queryInfo.dates.first), endDate = new Date(queryInfo.dates.last), year, month, day,
+                    queryFunction;
 
                 fromCityCode = queryCityCode(queryInfo.fromCity);
                 toCityCode = queryCityCode(queryInfo.toCity);
@@ -205,7 +202,7 @@ var ticketto = function () {
                 queryUrls = [];
 
 //                build a queryUrls group from queryInfo ,each item is a query per day.
-                for (date = new Date(startDate.getTime()); date <= endDate; date.setDate(date.getDate() + 1)) {
+                for (date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
                     year = date.getFullYear();
                     month = date.getMonth() + 1;
                     day = date.getDate();
@@ -216,15 +213,17 @@ var ticketto = function () {
                     queryUrls.push(buildQueryTrainUrl(fromCityCode, toCityCode, year + "-" + month + "-" + day, queryInfo.trainClass))
                 }
 
-                return function () {
+                queryFunction = function () {
 //                    Returns a function built from the queryInfo,and can be used to retrieve train infos
                     var res = [], i;
 
                     for (i in queryUrls) {
                         res.push(queryTrainPerDate(queryUrls[i]));
                     }
+
                     return res;
                 };
+                return queryFunction;
 
             };
 
@@ -235,8 +234,7 @@ var ticketto = function () {
         "buildQueryFunction": buildQueryFunction,
         "getCityNames": getCityNames
     };
-}
-    ();
+}();
 //var test = function () {
 //    var qInfo = {fromCity: "北京", toCity: "上海", dates: [new Date(2013, 10, 24), new Date(2013, 10, 24)], trainClass: "QB%23D%23Z%23T%23K%23QT%23", departureStartTime: "21:22", departureEndTime: "21:40"},
 //        qInfo2 = {fromCity: "北京", toCity: "上海", dates: [new Date(2013, 10, 27), new Date(2013, 10, 29)], trainClass: "QB%23D%23Z%23T%23K%23QT%23"},

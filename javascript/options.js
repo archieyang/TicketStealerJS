@@ -7,14 +7,30 @@ var log = function (message) {
 
 
 log("halo from options.js");
+Date.prototype.Format = function (fmt) { //author: meizz
+    var o = {
+        "M+": this.getMonth() + 1, //月份
+        "d+": this.getDate(), //日
+        "h+": this.getHours(), //小时
+        "m+": this.getMinutes(), //分
+        "s+": this.getSeconds(), //秒
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度
+        "S": this.getMilliseconds() //毫秒
+    };
+    if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    for (var k in o)
+        if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+    return fmt;
+}
 
 $(document).ready(function () {
 
     var $firstDayPicker = $("#firstDay"),
         $lastDayPicker = $("#lastDay"),
-        $startButton = $("#startButton"),
         $departureTimeFrom = $('#startTime'),
         $departureTimeTo = $('#endTime'),
+        $startButton = $('#startButton'),
+        $stopButton = $('#stopButton'),
         cityNames = ticketto.getCityNames(),
 
         datePickerParam = function () {
@@ -122,33 +138,32 @@ $(document).ready(function () {
     $departureTimeTo.timepicker('setTime', '23:59');
 
     $('.cityInfo').autocomplete({
-       source:cityNames
+        source: cityNames
     });
 
 
-    $("#settingForm").submit(function (event) {
+    $startButton.click(function (event) {
         var trainInfo = {},
             basicInfo = $("[name='basicInfo']"), trainClassCheckbox = $("[name='tclass']"),
-            _timeAsDateToTimeString = function(date){
+            _timeAsDateToTimeString = function (date) {
                 var h = date.getHours(), m = date.getMinutes();
-                if(h<10){
+                if (h < 10) {
                     h = '0' + h;
                 }
-                if(m<10){
+                if (m < 10) {
                     m = '0' + m;
                 }
                 return h + ":" + m;
             };
 
         trainInfo.dates = {
-            first: $firstDayPicker.datepicker('getDate'),
-            last: $lastDayPicker.datepicker('getDate')
+            first: $firstDayPicker.datepicker('getDate').Format('yyyy-MM-dd'),
+            last: $lastDayPicker.datepicker('getDate').Format('yyyy-MM-dd')
         };
 
 
-        trainInfo.departureStartTime =_timeAsDateToTimeString($departureTimeFrom.timepicker('getTimeAsDate'));
+        trainInfo.departureStartTime = _timeAsDateToTimeString($departureTimeFrom.timepicker('getTimeAsDate'));
         trainInfo.departureEndTime = _timeAsDateToTimeString($departureTimeTo.timepicker('getTimeAsDate'));
-
 
 
         event.preventDefault();
@@ -157,8 +172,6 @@ $(document).ready(function () {
         trainInfo.fromCity = basicInfo[0].value;
         trainInfo.toCity = basicInfo[1].value;
 
-//        trainInfo.departureStartTime = trainInfo.departureStartTime === undefined ? basicInfo[4].value : trainInfo.departureStartTime;
-//        trainInfo.departureEndTime = trainInfo.departureEndTime === undefined ? basicInfo[5].value : trainInfo.departureEndTime;
         trainInfo.trainClass = "";
 
         trainClassCheckbox.each(function () {
@@ -168,10 +181,43 @@ $(document).ready(function () {
         });
 
         log(trainInfo);
-        var f = ticketto.buildQueryFunction(trainInfo);
 
-        log(f());
 
+        chrome.runtime.sendMessage({
+                trainInfo: trainInfo,
+                type: "QUERY_START",
+                queryInterval:3*1000
+            },
+            function (response) {
+                log(response.message);
+                $startButton.attr('disabled', "true");
+//                console.log(response);
+
+            }
+        );
+
+
+    });
+
+    $stopButton.click(function (event) {
+        event.preventDefault();
+        chrome.runtime.sendMessage({
+                type: "QUERY_STOP"
+            },
+            function (response) {
+                log(response.message);
+                $startButton.removeAttr('disabled');
+            }
+        );
+
+    });
+
+    chrome.runtime.onMessage.addListener(function (request) {
+        if (request.type == "QUERY_FEEDBACK") {
+            console.log(request);
+        }
 
     })
+
+
 });
