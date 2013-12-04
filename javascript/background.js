@@ -1,24 +1,19 @@
-var queryId = -1,
-    defaultQueryInterval = 10 * 1000,
-    loopQueryBuilder = function (query) {
-        return function () {
-            chrome.runtime.sendMessage({type: "QUERY_FEEDBACK", data: query()});
-        }
-    };
+var queryId = -1;
 
-chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse) {
+chrome.runtime.onConnect.addListener(function (port) {
+    if (port.name == "optionPort") {
+        port.onMessage.addListener(function (msg) {
+            if (msg.type == "QUERY_START") {
+                var query = ticketto.buildQueryFunction(msg.trainInfo),
+                    responseWithData = function () {
+                        port.postMessage(query())
+                    };
+                responseWithData();
+                queryId = setInterval(responseWithData, 5 * 1000);
 
-        if (request.type == "QUERY_START") {
-            var query = ticketto.buildQueryFunction(request.trainInfo), loopQuery = loopQueryBuilder(query);
-            loopQuery();
-            queryId = setInterval(loopQuery, request.queryInterval === undefined ? defaultQueryInterval : request.queryInterval);
-
-            sendResponse({message: "Started."});
-
-        } else if (request.type == "QUERY_STOP") {
-            clearInterval(queryId);
-            sendResponse({message: "Stopped."});
-        }
-
-    });
+            } else if (msg.type == "QUERY_STOP") {
+                clearInterval(queryId);
+            }
+        });
+    }
+});

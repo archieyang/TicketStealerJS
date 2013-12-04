@@ -31,7 +31,10 @@ $(document).ready(function () {
         $departureTimeTo = $('#endTime'),
         $startButton = $('#startButton'),
         $stopButton = $('#stopButton'),
+        $table = $('#queryResTable'),
         cityNames = ticketto.getCityNames(),
+        port = chrome.runtime.connect({name: 'optionPort'}),
+
 
         datePickerParam = function () {
 
@@ -113,6 +116,54 @@ $(document).ready(function () {
 
         }();
 
+    port.onMessage.addListener(function (msg) {
+        log(msg);
+
+        var visualizeInfoPerDay = function (day) {
+                return '<tr>'
+                    + '<td>' + day.date + '</td>'
+                    + '<td>' + day.timestamp + '</td>'
+                    + '<td>' + "checked at " + new Date() + '</td>'
+                    + '</tr>';
+            },
+            visualizeTicketInfo = function (ticket) {
+                return '<td>' + ticket.businessSt + '</td>'
+                    + '<td>' + ticket.VIPSt + '</td>'
+                    + '<td>' + ticket.G1St + '</td>'
+                    + '<td>' + ticket.G2St + '</td>'
+                    + '<td>' + ticket.VIPSoftBd + '</td>'
+                    + '<td>' + ticket.softBd + '</td>'
+                    + '<td>' + ticket.hardBd + '</td>'
+                    + '<td>' + ticket.softSt + '</td>'
+                    + '<td>' + ticket.hardSt + '</td>'
+                    + '<td>' + ticket.standTkt + '</td>';
+            },
+            visualizeTrainInfo = function (item) {
+                return '<tr>'
+                    + '<td>' + item.trainNo + '</td>'
+                    + '<td>' + item.from + '</td>'
+                    + '<td>' + item.fromTime + '</td>'
+                    + '<td>' + item.to + '</td>'
+                    + '<td>' + item.toTime + '</td>'
+                    + '<td>' + item.lastTime + '</td>'
+                    + visualizeTicketInfo(item.ticket)
+
+                    + '</tr>';
+            };
+
+        $table.empty();
+
+        for (var iDay in msg) {
+            $table.append(visualizeInfoPerDay(msg[iDay]));
+            for (var iTrain in msg[iDay].trainInfoData) {
+                $table.append(visualizeTrainInfo(msg[iDay].trainInfoData[iTrain]));
+            }
+        }
+
+        $startButton.attr('disabled', 'true');
+        $stopButton.removeAttr('disabled');
+    });
+
 //  Something interesting here.
 //  When call datepicker('setDate', new Date()),onSelect is not called.
 //  When call timepicker('setTime', 'HH:MM'), onSelect is called.
@@ -183,41 +234,32 @@ $(document).ready(function () {
         log(trainInfo);
 
 
-        chrome.runtime.sendMessage({
-                trainInfo: trainInfo,
-                type: "QUERY_START",
-                queryInterval:3*1000
-            },
-            function (response) {
-                log(response.message);
-                $startButton.attr('disabled', "true");
-//                console.log(response);
+//        chrome.runtime.sendMessage({
+//                trainInfo: trainInfo,
+//                type: "QUERY_START",
+//                queryInterval:3*1000
+//            },
+//            function (response) {
+//                log(response);
+//                $startButton.attr('disabled', "true");
+////                console.log(response);
+//
+//            }
+//        );
 
-            }
-        );
-
+        port.postMessage({trainInfo: trainInfo, type: 'QUERY_START'});
 
     });
 
     $stopButton.click(function (event) {
         event.preventDefault();
-        chrome.runtime.sendMessage({
-                type: "QUERY_STOP"
-            },
-            function (response) {
-                log(response.message);
-                $startButton.removeAttr('disabled');
-            }
-        );
+
+        port.postMessage({type: 'QUERY_STOP'});
+
+        $startButton.removeAttr('disabled');
+        $stopButton.attr('disabled', 'true');
 
     });
-
-    chrome.runtime.onMessage.addListener(function (request) {
-        if (request.type == "QUERY_FEEDBACK") {
-            console.log(request);
-        }
-
-    })
 
 
 });

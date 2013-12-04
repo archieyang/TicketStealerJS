@@ -122,7 +122,7 @@ var ticketto = function () {
                         ticketInfo,//All ticket info with only number or "--"
 
                         trainInfoRes = [],//All trainItems
-                        trainInfoResWithTimestamp,//trainInfoRes with timestamp
+                        wrappedTrainInfoRes,//trainInfoRes with timestamp
                         i;
 
 
@@ -175,14 +175,16 @@ var ticketto = function () {
 
                     }
 
-                    trainInfoResWithTimestamp = {};
-                    trainInfoResWithTimestamp.trainInfoData = trainInfoRes;
+                    wrappedTrainInfoRes = {};
+                    wrappedTrainInfoRes.trainInfoData = trainInfoRes;
 
                     if (rawInfoObject.hasOwnProperty("time")) {
-                        trainInfoResWithTimestamp.timestamp = rawInfoObject.time;
+                        wrappedTrainInfoRes.timestamp = rawInfoObject.time;
                     }
 
-                    return trainInfoResWithTimestamp;
+                    wrappedTrainInfoRes.date = queryTrainTicketUrl.match(/\d{4}\-\d{2}\-\d{2}/)[0];
+
+                    return wrappedTrainInfoRes;
                 };
 
 
@@ -220,7 +222,6 @@ var ticketto = function () {
                     for (i in queryUrls) {
                         res.push(queryTrainPerDate(queryUrls[i]));
                     }
-
                     return res;
                 };
                 return queryFunction;
